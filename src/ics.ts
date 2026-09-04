@@ -1,66 +1,138 @@
-import type { GeneratedEvent, Schedule } from './types'
+import {
+  DEFAULT_ICS_CATEGORY,
+  ICS_CONTINUATION_PREFIX_BYTES,
+  ICS_LINE_BYTE_LIMIT,
+  ICS_PROD_ID,
+  ICS_TIMEZONE_OFFSET_ITERATIONS,
+} from './constants'
+import { defaultCalendarName } from './i18n'
+import type { GeneratedEvent, Locale, Schedule } from './types'
+
+const textEncoder = new TextEncoder()
 
 export function serializeIcs(schedule: Schedule): string {
+  const stamp = formatIcsUtc(new Date())
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Give Me The Grind//Calendar Generator//EN',
+    `PRODID:${ICS_PROD_ID}`,
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeText(schedule.calendarName)}`,
     `X-WR-TIMEZONE:${escapeText(schedule.timezone)}`,
   ]
   for (const event of schedule.events) {
-    lines.push(...serializeEvent(event, schedule))
+    lines.push(...serializeEvent(event, schedule, stamp))
   }
   lines.push('END:VCALENDAR')
   return `${lines.flatMap(foldLine).join('\r\n')}\r\n`
 }
 
-function serializeEvent(event: GeneratedEvent, schedule: Schedule): string[] {
-  const localStart = toIcsLocal(event.date, event.start)
-  const localEnd = toIcsLocal(event.date, event.end)
-  const stamp = toIcsUtc(new Date())
+function serializeEvent(event: GeneratedEvent, schedule: Schedule, stamp: string): string[] {
+  const start = toIcsUtc(event.date, event.start, schedule.timezone)
+  const end = toIcsUtc(event.date, event.end, schedule.timezone)
   return [
     'BEGIN:VEVENT',
     `UID:${escapeText(`${schedule.runId}-${event.id}@give-me-the-grind`)}`,
     `DTSTAMP:${stamp}`,
-    `DTSTART;TZID=${escapeText(schedule.timezone)}:${localStart}`,
-    `DTEND;TZID=${escapeText(schedule.timezone)}:${localEnd}`,
+    `DTSTART:${start}`,
+    `DTEND:${end}`,
     `SUMMARY:${escapeText(event.title)}`,
     `DESCRIPTION:${escapeText(event.description)}`,
-    'CATEGORIES:GRIND',
+    `CATEGORIES:${DEFAULT_ICS_CATEGORY}`,
     'END:VEVENT',
   ]
 }
 
-export function downloadFilename(name: string, locale: 'en' | 'sv'): string {
-  const safe = name.trim().replace(/[^a-z0-9 _-]/gi, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
-  return `${safe || (locale === 'sv' ? 'gnuggkalender' : 'grind-calendar')}.ics`
+export function downloadFilename(name: string, locale: Locale): string {
+  const safe = sanitizeFilename(name)
+  const fallback = sanitizeFilename(defaultCalendarName(locale).toLowerCase())
+  return `${safe || fallback}.ics`
+}
+
+function sanitizeFilename(value: string): string {
+  return value.trim()
+    .replace(/[^\p{L}\p{N} _-]/gu, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 function escapeText(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+  return value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n')
 }
 
 function foldLine(line: string): string[] {
+  if (line.length === 0) return ['']
+
   const parts: string[] = []
-  let remaining = line
-  let first = true
-  while (remaining.length > 75) {
-    const width = first ? 75 : 74
-    parts.push(first ? remaining.slice(0, width) : ` ${remaining.slice(0, width)}`)
-    remaining = remaining.slice(width)
-    first = false
+  let current = ''
+  let currentBytes = 0
+  let isFirstLine = true
+  const availableBytes = () => ICS_LINE_BYTE_LIMIT - (isFirstLine ? 0 : ICS_CONTINUATION_PREFIX_BYTES)
+
+  for (const character of line) {
+    const characterBytes = byteLength(character)
+    if (current && currentBytes + characterBytes > availableBytes()) {
+      parts.push(isFirstLine ? current : ` ${current}`)
+      current = ''
+      currentBytes = 0
+      isFirstLine = false
+    }
+    current += character
+    currentBytes += characterBytes
   }
-  parts.push(first ? remaining : ` ${remaining}`)
+
+  parts.push(isFirstLine ? current : ` ${current}`)
   return parts
 }
 
-function toIcsLocal(date: string, time: string): string {
-  return `${date.replaceAll('-', '')}T${time.replace(':', '')}00`
+function byteLength(value: string): number {
+  return textEncoder.encode(value).length
 }
 
-function toIcsUtc(date: Date): string {
+function toIcsUtc(date: string, time: string, timezone: string): string {
+  const [year, month, day] = date.split('-').map(Number)
+  const [hour, minute] = time.split(':').map(Number)
+  const localTimestamp = utcTimestamp(year, month, day, hour, minute)
+  let timestamp = localTimestamp
+
+  for (let iteration = 0; iteration < ICS_TIMEZONE_OFFSET_ITERATIONS; iteration += 1) {
+    const parts = getTimezoneParts(new Date(timestamp), timezone)
+    const representedTimestamp = utcTimestamp(parts.year, parts.month, parts.day, parts.hour, parts.minute)
+    timestamp = localTimestamp - (representedTimestamp - timestamp)
+  }
+
+  return formatIcsUtc(new Date(timestamp))
+}
+
+function getTimezoneParts(date: Date, timezone: string): { year: number; month: number; day: number; hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    hour: Number(values.hour),
+    minute: Number(values.minute),
+  }
+}
+
+function utcTimestamp(year: number, month: number, day: number, hour: number, minute: number): number {
+  const date = new Date(0)
+  date.setUTCFullYear(year, month - 1, day)
+  date.setUTCHours(hour, minute, 0, 0)
+  return date.getTime()
+}
+
+function formatIcsUtc(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
 }

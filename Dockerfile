@@ -2,8 +2,7 @@ FROM node:24-alpine AS build
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --global npm@12.0.2 \
-  && npm ci
+RUN npm ci
 
 COPY . .
 RUN npm run build

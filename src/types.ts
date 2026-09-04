@@ -1,12 +1,28 @@
-export type Locale = 'en' | 'sv'
+import type { Category, Locale, Weekday } from './constants'
 
-export type Category =
-  | 'networking'
-  | 'pivoting'
-  | 'thought-leadership'
-  | 'productivity-theater'
-  | 'inbox-theater'
-  | 'kpi-alignment'
+export type { Category, Locale, Weekday } from './constants'
+
+export type ErrorCode =
+  | 'startDate'
+  | 'endDate'
+  | 'dateOrder'
+  | 'range'
+  | 'weekdays'
+  | 'noActiveDays'
+  | 'workStart'
+  | 'workEnd'
+  | 'workWindow'
+  | 'blockOrder'
+  | 'blockRange'
+  | 'breakEvery'
+  | 'breakDuration'
+  | 'lunchTime'
+  | 'lunchOrder'
+  | 'lunchWindow'
+  | 'noEntries'
+  | 'tooMany'
+  | 'catalog'
+  | 'invalidInput'
 
 export interface CatalogEntry {
   id: string
@@ -32,7 +48,7 @@ export interface CatalogCringe {
 export interface GenerationInput {
   startDate: string
   endDate: string
-  weekdays: number[]
+  weekdays: Weekday[]
   workStart: string
   workEnd: string
   minBlock: number
@@ -78,6 +94,10 @@ export interface Schedule {
 export type FieldErrors = Partial<Record<keyof GenerationInput | 'form', string>>
 
 export interface I18nCopy {
+  documentTitle: string
+  defaultCalendarName: string
+  homeLabel: string
+  browserOnly: string
   appKicker: string
   appTitle: string
   appIntro: string
@@ -102,12 +122,10 @@ export interface I18nCopy {
   breakRulesHelp: string
   breakEvery: string
   breakDuration: string
-  lunch: string
   lunchHelp: string
   lunchBreak: string
   grindStyle: string
   grindStyleHelp: string
-  themes: string
   allThemes: string
   themeNames: Record<Category, string>
   intensity: string
@@ -120,9 +138,13 @@ export interface I18nCopy {
   nsfw: string
   nsfwHelp: string
   generate: string
+  generating: string
   regenerate: string
   download: string
   preview: string
+  outputEyebrow: string
+  checks: string
+  scheduleEvents: string
   previewEmpty: string
   previewEmptyHelp: string
   detectedTimezone: string
@@ -131,13 +153,11 @@ export interface I18nCopy {
   summaryDays: string
   summaryEvents: string
   summaryMinutes: string
-  minutesShort: string
   generationReady: string
   downloadReady: string
-  errors: Record<string, string>
+  errors: Record<ErrorCode, string>
   generatedOn: string
   eventCountLabel: string
-  intensityLabel: string
-  nsfwLabel: string
-  grindBadge: string
+  footerPrimary: string
+  footerSecondary: string
 }

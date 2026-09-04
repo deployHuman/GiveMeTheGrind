@@ -21,6 +21,12 @@ export interface CatalogEntry {
 export interface CatalogFile {
   locale: Locale
   entries: CatalogEntry[]
+  cringe?: CatalogCringe
+}
+
+export interface CatalogCringe {
+  titles: Record<Category, string[]>
+  descriptions: Record<Category, string[]>
 }
 
 export interface GenerationInput {

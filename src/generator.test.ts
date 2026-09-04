@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { loadCatalog } from './content/loadCatalog'
 import { getCopy } from './i18n'
 import { defaultInput, generateSchedule, validateInput } from './generator'
 
@@ -30,5 +31,14 @@ describe('schedule generation', () => {
     const schedule = generateSchedule(input, getCopy('en').errors, () => 0.25)
     expect(schedule.events.length).toBeGreaterThan(1)
     expect(schedule.events.slice(1).every((event, index) => event.title !== schedule.events[index].title)).toBe(true)
+  })
+
+  it('loads localized cringe overlays for generated content', () => {
+    const english = loadCatalog('en')[0]
+    const swedish = loadCatalog('sv')[0]
+    expect(english.title).toContain(' · ')
+    expect(english.description).toContain('ecosystem')
+    expect(swedish.title).toContain(' · ')
+    expect(swedish.description).toContain('ekosystem')
   })
 })

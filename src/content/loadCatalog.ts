@@ -18,7 +18,21 @@ export function loadCatalog(locale: Locale): CatalogEntry[] {
     }
     ids.add(entry.id)
   }
-  return raw.entries
+  return raw.entries.map((entry) => boostCringe(entry, raw.cringe))
+}
+
+function boostCringe(entry: CatalogEntry, cringe: CatalogFile['cringe']): CatalogEntry {
+  if (!cringe) return entry
+  const index = [...entry.id].reduce((sum, character) => sum + character.charCodeAt(0), 0)
+  const titleLines = cringe.titles[entry.category] ?? []
+  const descriptionLines = cringe.descriptions[entry.category] ?? []
+  const titleLine = titleLines[index % titleLines.length]
+  const descriptionLine = descriptionLines[index % descriptionLines.length]
+  return {
+    ...entry,
+    title: titleLine ? `${titleLine} · ${entry.title}` : entry.title,
+    description: descriptionLine ? `${descriptionLine} ${entry.description}` : entry.description,
+  }
 }
 
 function isCatalogEntry(entry: unknown): entry is CatalogEntry {

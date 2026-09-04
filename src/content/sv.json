@@ -66,7 +66,9 @@
     "generatedOn": "Skapad",
     "eventCountLabel": "händelser",
     "footerPrimary": "GE MIG GNUGGET",
-    "footerSecondary": "lokalt först / lagom kaos"
+    "footerSecondary": "lokalt först / lagom kaos",
+    "footerRepository": "kod",
+    "footerCreator": "skapare"
   },
   "cringe": {
     "titles": {

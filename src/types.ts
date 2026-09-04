@@ -160,4 +160,6 @@ export interface I18nCopy {
   eventCountLabel: string
   footerPrimary: string
   footerSecondary: string
+  footerRepository: string
+  footerCreator: string
 }

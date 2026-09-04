@@ -220,7 +220,17 @@ export default function App() {
           </section>
         </div>
       </main>
-      <footer><span>{copy.footerPrimary} / {currentYear}</span><span>{copy.footerSecondary} <i aria-hidden="true">✦</i></span></footer>
+      <footer>
+        <span>{copy.footerPrimary} / {currentYear}</span>
+        <span className="footer-meta">
+          <span>{copy.footerSecondary}</span>
+          <span className="footer-links">
+            <a href="https://github.com/deployHuman/GiveMeTheGrind" target="_blank" rel="noreferrer">{copy.footerRepository} ↗</a>
+            <a href="https://gabrieltrosell.com/" target="_blank" rel="noreferrer">{copy.footerCreator} ↗</a>
+          </span>
+          <i aria-hidden="true">✦</i>
+        </span>
+      </footer>
     </div>
   )
 }

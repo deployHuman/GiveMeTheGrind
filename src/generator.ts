@@ -186,6 +186,7 @@ export function generateSchedule(input: GenerationInput, copyErrors: ErrorMessag
   if (eligible.length === 0) throw new Error(copyErrors.noEntries)
 
   const events: GeneratedEvent[] = []
+  const usedEntryIds = new Set<string>()
   let previousEntryId: string | undefined
   const start = parseDate(input.startDate)
   const end = parseDate(input.endDate)
@@ -199,6 +200,7 @@ export function generateSchedule(input: GenerationInput, copyErrors: ErrorMessag
       settings,
       eligible,
       previousEntryId,
+      usedEntryIds,
       random,
       events.length,
       copyErrors.tooMany,
@@ -229,6 +231,7 @@ function generateDayEvents(
   settings: ParsedScheduleSettings,
   eligible: CatalogEntry[],
   previousEntryId: string | undefined,
+  usedEntryIds: Set<string>,
   random: () => number,
   eventOffset: number,
   tooManyError: string,
@@ -269,7 +272,7 @@ function generateDayEvents(
     const maxDuration = Math.min(settings.maxBlock, available)
     const durationRange = maxDuration - settings.minBlock + 1
     const duration = settings.minBlock + Math.floor(normalizeRandom(random()) * durationRange)
-    const entry = chooseEntry(eligible, previousEntryId, random)
+    const entry = chooseEntry(eligible, previousEntryId, usedEntryIds, random)
     previousEntryId = entry.id
     events.push({
       id: `${date}-${cursor}-${eventOffset + events.length}`,
@@ -288,9 +291,16 @@ function generateDayEvents(
   return { events, previousEntryId }
 }
 
-function chooseEntry(entries: CatalogEntry[], previousId: string | undefined, random: () => number): CatalogEntry {
-  const alternatives = entries.length > 1 ? entries.filter((entry) => entry.id !== previousId) : entries
-  return alternatives[randomIndex(alternatives.length, random)]
+function chooseEntry(entries: CatalogEntry[], previousId: string | undefined, usedIds: Set<string>, random: () => number): CatalogEntry {
+  let alternatives = entries.filter((entry) => !usedIds.has(entry.id) && entry.id !== previousId)
+  if (alternatives.length === 0) {
+    usedIds.clear()
+    alternatives = entries.length > 1 ? entries.filter((entry) => entry.id !== previousId) : entries
+  }
+
+  const entry = alternatives[randomIndex(alternatives.length, random)]
+  usedIds.add(entry.id)
+  return entry
 }
 
 function parseScheduleSettings(input: GenerationInput, invalidInputError: string): ParsedScheduleSettings {

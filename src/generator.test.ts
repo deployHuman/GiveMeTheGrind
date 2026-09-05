@@ -50,6 +50,25 @@ describe('schedule generation', () => {
     expect(schedule.events.slice(1).every((event, index) => event.title !== schedule.events[index].title)).toBe(true)
   })
 
+  it('does not repeat a subject before the eligible catalog is exhausted', () => {
+    const input = {
+      ...defaultInput(),
+      startDate: '2026-06-08',
+      endDate: '2026-06-08',
+      workStart: '09:00',
+      workEnd: '12:00',
+      minBlock: 30,
+      maxBlock: 30,
+      breakEvery: 0,
+      lunchEnabled: false,
+    }
+    const schedule = generateSchedule(input, getCopy('en').errors, () => 0)
+    const subjects = schedule.events.map((event) => `${event.title}\n${event.description}`)
+
+    expect(schedule.events.length).toBe(6)
+    expect(new Set(subjects).size).toBe(subjects.length)
+  })
+
   it('rejects fractional and non-finite numeric settings', () => {
     const input = defaultInput()
     const errors = getCopy('en').errors

@@ -4,6 +4,7 @@ import {
   GENERATION_LIMITS,
   MILLISECONDS_PER_DAY,
   RANDOM_ID_SPACE,
+  WEBSITE_URL,
   WEEKDAY_ORDER,
   isCategory,
   isLocale,
@@ -276,7 +277,7 @@ function generateDayEvents(
       start: minutesToTime(cursor),
       end: minutesToTime(cursor + duration),
       title: entry.title,
-      description: entry.description,
+      description: `${entry.description}\n\n${WEBSITE_URL}`,
       category: entry.category,
       tags: entry.tags,
     })

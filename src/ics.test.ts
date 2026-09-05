@@ -46,7 +46,7 @@ describe('ICS serialization', () => {
 
   it('creates safe localized download filenames', () => {
     expect(downloadFilename('  Ångström / sprint!  ', 'sv')).toBe('Ångström-sprint.ics')
-    expect(downloadFilename('!!!', 'sv')).toBe('min-gnuggkalender.ics')
+    expect(downloadFilename('!!!', 'sv')).toBe('min-grindkalender.ics')
     expect(downloadFilename('   ', 'en')).toBe('my-grind-calendar.ics')
   })
 })

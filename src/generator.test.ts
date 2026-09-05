@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { loadCatalog, validateCatalog } from './content/loadCatalog'
-import { GENERATION_LIMITS } from './constants'
+import { GENERATION_LIMITS, WEBSITE_URL } from './constants'
 import { getCopy } from './i18n'
 import { defaultInput, generateSchedule, hasErrors, validateInput } from './generator'
 import type { GenerationInput } from './types'
@@ -12,6 +12,13 @@ describe('schedule generation', () => {
     expect(input.startDate).toBe(input.endDate)
     expect(input.weekdays).toContain(weekday)
     expect(generateSchedule(input, getCopy('en').errors, () => 0.5).events.length).toBeGreaterThan(0)
+  })
+
+  it('includes the website link in every generated meeting description', () => {
+    const schedule = generateSchedule({ ...defaultInput(), startDate: '2026-06-08', endDate: '2026-06-08' }, getCopy('en').errors, () => 0.5)
+
+    expect(schedule.events.length).toBeGreaterThan(0)
+    expect(schedule.events.every((event) => event.description.endsWith(`\n\n${WEBSITE_URL}`))).toBe(true)
   })
 
   it('rejects an inverted range and a range over 31 days', () => {

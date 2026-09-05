@@ -55,6 +55,8 @@ export const ICS_PROD_ID = '-//Give Me The Grind//Calendar Generator//EN'
 
 export const DEFAULT_ICS_CATEGORY = 'GRIND'
 
+export const WEBSITE_URL = 'https://givemethegrind.com/'
+
 export function isCategory(value: unknown): value is Category {
   return typeof value === 'string' && (CATEGORY_ORDER as readonly string[]).includes(value)
 }
